@@ -46,8 +46,8 @@ def parse_chart(years_since):
 
     track_info = []
 
-    song = soup.find("h2", {"class": "chart-row__song"}).get_text(strip=True)
-    artist = soup.find("a", {"class": "chart-row__artist"}).get_text(strip=True)
+    song = soup.find("a", {"class": "c-title__link lrv-a-unstyle-link"}).get_text(strip=True)
+    artist = soup.select("p.c-tagline.a-font-primary-l")[0].text.strip()
 
     track_info.append(song)
     track_info.append(artist)
