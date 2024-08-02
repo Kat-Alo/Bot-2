@@ -1,51 +1,63 @@
-from billboard import parse_chart
 import requests
 from os import makedirs
 from os.path import exists, join, basename
+import os
 import json
 from operator import itemgetter
+from dotenv import load_dotenv
+
+load_dotenv()
 
 SEARCH_BASE_URL = 'https://api.spotify.com/v1/search?q=/{query}&type=artist'
 RELATED_BASE_URL = "https://api.spotify.com/v1/artists/{id}/related-artists"
 
+AUTH_URL = 'https://accounts.spotify.com/api/token'
 
-def fetch_data(artist, url, data_fname, dir_name):
-    if exists(data_fname):
-        pass
-    else:
-        makedirs(dir_name, exist_ok = True)
-        resp = requests.get(url)
-        with open(data_fname, 'wb') as f:
-            f.write(resp.content)
 
-def parse_data(artist, url):
-    dir_name = artist + "_profile"
-    data_fname = dir_name + "id.json"
+def fetch_data(url, headers):
+    resp = requests.get(url, headers=headers)
+    return resp.json()
 
-    fetch_data(artist, url, data_fname, dir_name)
-    f = open(data_fname, 'r')
-    raw_data = f.read()
-    f.close()
-    return json.loads(raw_data)
+def get_related_artists(artist_id, headers):
+    related_url = RELATED_BASE_URL.format(id=artist_id)
+    data = fetch_data(related_url, headers)
 
-def get_id(years_since):
-    track_info = parse_chart(years_since)
+    return data
+
+def get_id(chart_topper, headers):
+    track_info = chart_topper
     artist = track_info[1]
     artist.replace(" ", "+")
 
     url = SEARCH_BASE_URL.format(query=artist)
-    artist_profile = parse_data(artist, url)
 
-    artist_id = artist_profile["artists"]["items"][0]['id']
+    data = fetch_data(url, headers)
+
+    artist_id = data["artists"]["items"][0]['id']
 
     return artist_id
 
+def authenticate():
+    data = {
+        'grant_type': 'client_credentials',
+        'client_id': os.environ['CLIENT_ID'],
+        'client_secret': os.environ['CLIENT_SECRET'],
+    }
 
-def get_related(years_since):
-    artist_id = get_id(years_since)
+    auth_response = requests.post(AUTH_URL, data=data)
+    access_token = auth_response.json().get('access_token')
 
-    url = RELATED_BASE_URL.format(id = artist_id)
-    related_artists = parse_data(artist_id, url)
+    return access_token
+
+
+def get_related(chart_topper):
+    access_token = authenticate()
+    headers = {
+        'Authorization': 'Bearer {}'.format(access_token)
+    }
+
+    artist_id = get_id(chart_topper, headers)  
+    related_artists = get_related_artists(artist_id, headers)
 
     rel_artist = related_artists["artists"][0]["name"]
 

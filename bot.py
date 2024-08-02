@@ -2,6 +2,8 @@ from billboard import parse_chart
 from spotify import get_related
 from datetime import date, datetime, timedelta
 
+import sys
+
 
 
 def bot(years_since):
@@ -13,12 +15,21 @@ def bot(years_since):
         return "Please enter a valid integer value."
 
     chart_topper = parse_chart(years_since)
-    rel_artist = get_related(years_since)
+    rel_artist = get_related(chart_topper)
 
-    return message.format(years = str(years_since),
+    print (message.format(years = str(years_since),
         song = str(chart_topper[0]),
         artist = str(chart_topper[1]),
         related_artist = str(rel_artist)
-        )
+    ))
+
+
+if __name__ == '__main__':
+
+    years_since = 10
+    if len(sys.argv) > 1:
+        years_since = int(sys.argv[1])
+
+    bot(years_since)
 
 
